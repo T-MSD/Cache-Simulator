@@ -37,7 +37,7 @@ typedef struct L1Cache {
 
 typedef struct L2Cache {
   uint32_t init;
-  CacheLine line[ASSOC][L2_LINES/2];
+  CacheLine line[L2_LINES/2][ASSOC];
 }L2Cache;
 
 typedef struct Cache {

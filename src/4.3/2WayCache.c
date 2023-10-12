@@ -38,15 +38,16 @@ void initCache() {
   }
 
   cache.L2.init = 1;
-  for (int k = 0; k < ASSOC; k++)
-    for (int i = 0; i < L2_LINES/2; i++){
-      cache.L2.line[k][i].Valid = 0;
-      cache.L2.line[k][i].Dirty = 0;
-      cache.L2.line[k][i].Tag = 0;
+  for (int i = 0; i < L2_LINES/2; i++){
+    for (int k = 0; k < ASSOC; k++){
+      cache.L2.line[i][k].Valid = 0;
+      cache.L2.line[i][k].Dirty = 0;
+      cache.L2.line[i][k].Tag = 0;
       for (int j = 0; j < BLOCK_SIZE; j+=WORD_SIZE) {
-        cache.L2.line[k][i].block[j] = 0;
+        cache.L2.line[i][k].block[j] = 0;
       }
     }
+  }
 }
 
 void accessL2(uint32_t address, uint8_t *data, uint32_t mode){
@@ -60,25 +61,25 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode){
 
   int set = 0;
   for (int i = 0; i < ASSOC; i++){
-    if (cache.L2.line[i][index].Valid && cache.L2.line[i][index].Tag == Tag){
+    if (cache.L2.line[index][i].Valid && cache.L2.line[index][i].Tag == Tag){
       set = i;
       break;
     }
   }
 
-  CacheLine *Line = &cache.L2.line[set][index];
+  CacheLine *Line = &cache.L2.line[index][set];
 
   if (!Line->Valid || Line->Tag != Tag) {         // if block not present - miss
     set = 0;
-    for (int i = 0; i < ASSOC && cache.L2.line[i][index].Valid; i++){
+    for (int i = 0; i < ASSOC && cache.L2.line[index][i].Valid; i++){
       set++;
     }
     if (set == ASSOC){
       set = 0;
-      unsigned int time = cache.L2.line[0][index].time;
+      unsigned int time = cache.L2.line[index][0].time;
       for (int i = 1; i < ASSOC; i++){
-        if (cache.L2.line[i][index].time < time){
-          time = cache.L2.line[i][index].time;
+        if (cache.L2.line[index][i].time < time){
+          time = cache.L2.line[index][i].time;
           set = i;
         }
       }
@@ -86,10 +87,10 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode){
     accessDRAM(MemAddress, TempBlock, MODE_READ); // get new block from DRAM
 
     if ((Line->Valid) && (Line->Dirty)) { // line has dirty block
-      accessDRAM(MemAddress, &(cache.L2.line[set][index].block[0]),
+      accessDRAM(MemAddress, &(cache.L2.line[index][set].block[0]),
                  MODE_WRITE); // then write back old block
     }
-    memcpy(&(cache.L2.line[set][index].block[0]), TempBlock,
+    memcpy(&(cache.L2.line[index][set].block[0]), TempBlock,
            BLOCK_SIZE); // copy new block to cache line
     Line->Valid = 1;
     Line->Tag = Tag;
@@ -97,13 +98,13 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode){
   } // if miss, then replaced with the correct block
 
   if (mode == MODE_READ) {
-      memcpy(data, &(cache.L2.line[set][index].block[offset]), BLOCK_SIZE);
+      memcpy(data, &(cache.L2.line[index][set].block[offset]), BLOCK_SIZE);
       time += L2_READ_TIME;
       Line->time = time;
     }
 
   if (mode == MODE_WRITE) { // write data from cache line
-    memcpy(&(cache.L2.line[set][index].block[offset]), data, BLOCK_SIZE); //word size para block size
+    memcpy(&(cache.L2.line[index][set].block[offset]), data, BLOCK_SIZE); //word size para block size
     time += L2_WRITE_TIME;
     Line->time = time;
     Line->Dirty = 1;
