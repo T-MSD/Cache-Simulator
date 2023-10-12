@@ -51,7 +51,7 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
     }
   }
 
-  Tag = address >> 6; // remove offset bits
+  Tag = address >> 14;
   MemAddress = address >> 6; // remove offset bits
   index = MemAddress % LINES;
   offset = address % BLOCK_SIZE;

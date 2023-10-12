@@ -52,7 +52,7 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode){
   uint32_t index, Tag, MemAddress, offset;
   uint8_t TempBlock[BLOCK_SIZE];
 
-  Tag = address;
+  Tag = address >> 15;
   MemAddress = address;
   index = MemAddress % L2_LINES;
   offset = address % BLOCK_SIZE; 
@@ -90,7 +90,7 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
   uint32_t index, Tag, MemAddress, offset;
   uint8_t TempBlock[BLOCK_SIZE];
 
-  Tag = address >> 6; // remove offset bits
+  Tag = address >> 15; 
   MemAddress = address >> 6; // remove offset bits
   index = MemAddress % L1_LINES;
   offset = address % BLOCK_SIZE;
